@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>今日通关奖励</title>
+        <style>
+            /* 基本样式 */
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                background-color: #ffebf3;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+            }
+            /* 按钮容器 */
+            .button-container {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px; /* 初始间距 */
+                margin-top: 20px;
+                position: relative;
+                min-height: 80px;
+                min-width: 300px; /* 确保有足够空间可以移动 */
+            }
+            /* 主体图片样式 */
+            .main-image {
+                width: 150px;
+                height: auto;
+                margin-bottom: 20px;
+            }
+            /* 文字样式 */
+            .message {
+                font-size: 24px;
+                color: #333;
+                margin-bottom: 20px;
+            }
+            /* 按钮基础样式 */
+            .button {
+                padding: 15px 30px;
+                font-size: 18px;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                min-width: 100px;
+                transform-origin: center;
+                position: relative;
+                z-index: 1;
+            }
+            /* 同意按钮 */
+            .yes {
+                background-color: #ff6b81;
+            }
+            /* 拒绝按钮 */
+            .no {
+                background-color: #70a1ff;
+            }
+            /* 跳跃状态的按钮 */
+            .no.jumping {
+                position: absolute !important;
+                transition: all 0.5s ease;
+                z-index: 2;
+            }
+            /* 隐藏元素样式 */
+            .hidden {
+                display: none;
+            }
+            /* 最终页面图片样式 */
+            .final-image {
+                width: 150px;
+                height: auto;
+                margin-bottom: 20px;
+            }
+            /* 最终页面文字样式 */
+            .final-message {
+                font-size: 24px;
+                color: #333;
+            }
+            /* 绝对定位按钮 */
+            .button-container {
+                position: relative;
+                margin-top: 20px;
+                min-height: 80px; /* 确保有足够空间让按钮移动 */
+                display: flex;
+                gap: 20px; /* 初始间距 */
+                align-items: center;
+                justify-content: center;
+            }
+
+            .moving-button {
+                transition: all 0.3s ease;
+                position: relative; /* 初始相对定位 */
+            }
+        </style>
+    </head>
+    <body>
+        <!-- 主页面内容区域 -->
+        <div id="mainContent">
+            <img src="images/main.gif" alt="主体" class="main-image" id="mainImage">
+            <div class="message">张同学，五一请跟我出去玩嘛~~~</div>
+            <div class="button-container">
+                <button class="button yes" id="yesButton">可以</button>
+                <button class="button no moving-button" id="noButton">不要</button>
+            </div>
+        </div>
+        <!-- 一级页面内容 -->
+        <div id="yesContent" class="hidden">
+            <img src="images/main-yes.gif" alt="主体-YES" class="final-image">
+            <div class="final-message">好耶！目的地——青岛~~~</div>
+        </div>
+        <!-- 二级页面内容 -->
+        <div id="confessionContent" class="hidden">
+            <img src="images/main-no.gif" alt="主体-NO" class="final-image">
+            <div class="final-message">不要嘛~求求你啦~陪我嘛~</div>
+        </div>
+
+        <script>
+            // 获取DON元素引用
+            const mainContent = document.getElementById('mainContent');
+            const yesContent = document.getElementById('yesContent');
+            const confessionContent = document.getElementById('confessionContent');
+            const yesButton = document.getElementById('yesButton');
+            const noButton = document.getElementById('noButton');
+            const mainImage = document.getElementById('mainImage');
+            const buttonContainer = document.getElementById('buttonContainer');
+
+            // 状态变量初始化
+            let clickCount = 0;
+            const jumpThreshold = 3; // 开始跳跃的次数
+            const finalThreshold = 8; // 显示二级页面的次数
+            let isImageChanged = false;
+            let isJumping = false;
+            let buttonPositions = { yes: {}, no: {} }; // 存储按钮位置信息
+
+            // “可以”按钮点击事件处理
+            yesButton.addEventListener('click', () => {
+                mainContent.classList.add('hidden');
+                yesContent.classList.remove('hidden');
+            });
+            // “不要”按钮点击事件处理
+            noButton.addEventListener('click', () => {
+                // 第一次点击时更换图片
+                if (!isImageChanged) {
+                    mainImage.src = 'images/main2.gif';
+                    isImageChanged = true;
+                }
+                // 计数增加
+                clickCount++;
+                if (clickCount < finalThreshold) {
+                    // 调整按钮大小和间距
+                    adjustButtonSizes();
+                    // 检查是否达到跳跃阈值
+                    if (clickCount >= jumpThreshold && !isJumping) {
+                        startJumping();
+                    }
+                    // 如果已经在跳跃状态，则移动按钮
+                    if (isJumping) {
+                        moveNoButtonRandomly();
+                    }
+                } else {
+                    // 达到最终阈值，显示二级页面
+                    showFinalConfession();
+                }
+            });
+
+            // 调整按钮大小和间距的函数
+            function adjustButtonSizes() {
+                // 放大“可以”按钮
+                const currentYesScale = parseFloat(yesButton.style.transform?.replace('scale(', '')?.replace(')', '')) || 1;
+                const newYesScale = currentYesScale + 0.3;
+                yesButton.style.transform = `scale(${newYesScale})`;
+                // 缩小“不要”按钮
+                const currentNoScale = parseFloat(noButton.style.transform?.replace('scale(', '')?.replace(')', '')) || 1;
+                const newNoScale = Math.max(0.5, currentNoScale - 0.1);
+                noButton.style.transform = `scale(${newNoScale})`;
+                // 减少按钮间距（通过负边距实现）
+                const currentMargin = parseInt(noButton.style.marginLeft) || 0;
+                const newMargin = currentMargin - 8; // 每次减少8px间距
+                noButton.style.marginLeft = `${newMargin}px`;
+            }
+
+            // 开启跳跃模式
+            function startJumping() {
+                isJumping = true;
+                // 保存容器的相对位置信息
+                const containerRect = buttonContainer.getBoundingClientRect();
+                // 获取两个按钮的当前位置
+                const yesRect = yesButton.getBoundingClientRect();
+                const noRect = noButton.getBoundingClientRect();
+                // 保存原始位置（相对容器）
+                buttonPositions.yes = {
+                    left: yesRect.left - containerRect.left,
+                    top: yesRect.top - containerRect.top
+                };
+                buttonPositions.no = {
+                    left: noRect.left - containerRect.left,
+                    top: noRect.top - containerRect.top
+                };
+                // 添加跳跃样式到“不要”按钮
+                noButton.classList.add('jumping');
+                // 设置“不要”按钮的初始绝对位置
+                noButton.style.left = `${buttonPositions.no.left}px`;
+                noButton.style.top = `${buttonPositions.no.top}px`;
+                // 清除marginLeft避免冲突
+                noButton.style.marginLeft = '0px';
+            } 
+            // 随机移动“不要”按钮（避免与“可以”按钮重合）
+            function moveNoButtonRandomly() {
+                if (!isJumping) return;
+                const containerRect = buttonContainer.getBoundingClientRect();
+                const yesRect = yesButton.getBoundingClientRect();
+                const noRect = noButton.getBoundingClientRect();
+                // 计算容器内的可用空间
+                const maxX = containerRect.width - noRect.width;
+                const maxY = containerRect.height - noRect.height;
+                let newPosition = null;
+                let attempts = 0;
+                const maxAttempts = 50; // 最大点击阈值
+                // 循环尝试找到不重合的位置
+                while (attempts < maxAttempts) {
+                    // 生成随机位置
+                    const randowX = Math.max(0, Math.min(maxX, Math.random() * maxX));
+                    const randowY = Math.max(0, Math.min(maxY, Math.random() * maxY));
+                    // 创建“不要”按钮的假设边界框
+                    const noBounds = {
+                        left: randowX,
+                        top: randowY,
+                        right: randowX + noRect.width,
+                        bottom: randowY + noRect.height
+                    };
+                    // 创建“不要”按钮的假设边界框
+                    const yesBounds = {
+                        left: buttonPositions.yes.left,
+                        top: buttonPositions.yes.top,
+                        right: buttonPositions.yes.left + yesRect.width,
+                        bottom: buttonPositions.yes.top + yesRect.height
+                    };
+                    // 检查是否重合（添加一些缓冲距离）
+                    const buffer = 20; // 20px的缓冲距离
+                    const isOverlapping = !(
+                        noBounds.left > yesBounds.right + buffer ||
+                        noBounds.right < yesBounds.left - buffer ||
+                        noBounds.top > yesBounds.bottom + buffer ||
+                        noBounds.bottom < yesBounds.top - buffer
+                    );
+                    if (!isOverlapping) {
+                        newPosition = { x: randowX, y: randowY };
+                        break;
+                    }
+                    attempts++;
+                }
+                // 如果找不到不重合的位置，就使用最后生成的位置
+                if (!newPosition) {
+                    newPosition = {
+                        x: Math.max(0, Math.min(maxX, Math.random() * maxX)),
+                        y: Math.max(0, Math.min(maxY, Math.random() * maxY)),
+                    };
+                }
+                // 应用新位置
+                noButton.style.left = `${newPosition.x}px`;
+                noButton.style.top = `${newPosition.y}px`;
+            }
+            // 显示二级页面的函数
+            function showFinalConfession() {
+                mainContent.classList.add('hidden');
+                confessionContent.classList.remove('hidden');
+                noButton.disabled = true;
+            }
+            
+        </script>
+    </body>
+</html>
